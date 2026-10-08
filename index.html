@@ -46,6 +46,12 @@
     border-color: #0f766e; background: #0f766e; color: white;
   }
   .duration-btn:active { transform: scale(0.95); }
+  .duration-btn.test-mode {
+    border-color: #f59e0b; background: #fffbeb; color: #92400e;
+  }
+  .duration-btn.test-mode.active {
+    background: #f59e0b; color: white;
+  }
   .custom-days { margin-top: 10px; display: none; }
   .custom-days.show { display: block; }
   .custom-days input {
@@ -106,6 +112,7 @@
   <div class="card">
     <h2>⏱️ مدة الاشتراك</h2>
     <div class="durations">
+      <button class="duration-btn test-mode" data-days="2">يومان (تجربة)</button>
       <button class="duration-btn" data-days="30">شهر</button>
       <button class="duration-btn" data-days="90">3 أشهر</button>
       <button class="duration-btn" data-days="180">6 أشهر</button>
@@ -129,17 +136,11 @@
 </div>
 
 <script>
-  // ═══════════════════════════════════════════
-  // ⚙️ الإعدادات
-  // ═══════════════════════════════════════════
   var SERVER_URL = "https://script.google.com/macros/s/AKfycbytPNVifBks_sWEDDz4OztmBSeRAvyPOEliG6qdX4QwpqORY0oSNItWKb78O7_4epDK/exec";
   var ADMIN_KEY = "SM2026-ADMIN-CHANGE-ME";
 
   var selectedDays = 365;
 
-  // ═══════════════════════════════════════════
-  // اختيار المدة
-  // ═══════════════════════════════════════════
   var durationBtns = document.querySelectorAll('.duration-btn');
   for (var i = 0; i < durationBtns.length; i++) {
     durationBtns[i].addEventListener('click', function() {
@@ -167,9 +168,6 @@
     });
   }
 
-  // ═══════════════════════════════════════════
-  // تنسيق الكود
-  // ═══════════════════════════════════════════
   document.getElementById('deviceId').addEventListener('input', function(e) {
     var v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (v.length > 8) {
@@ -178,9 +176,6 @@
     e.target.value = v;
   });
 
-  // ═══════════════════════════════════════════
-  // التفعيل (باستخدام iframe — يعمل من ملف محلي)
-  // ═══════════════════════════════════════════
   function activateDevice() {
     var deviceId = document.getElementById('deviceId').value.trim();
     var expiryDiv = document.getElementById('expiryInfo');
@@ -200,11 +195,9 @@
     expiryDiv.classList.remove('show');
     showResult('loading', '⏳ جارٍ إرسال طلب التفعيل...');
 
-    // بناء الرابط
     var url = SERVER_URL + "?action=activate&device_id=" + encodeURIComponent(deviceId) +
               "&days=" + selectedDays + "&admin_key=" + ADMIN_KEY;
 
-    // إرسال الطلب في iframe مخفي
     var iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     iframe.style.width = '0';
@@ -212,11 +205,8 @@
     iframe.src = url;
     document.body.appendChild(iframe);
 
-    // انتظار 5 ثوانٍ ثم عرض النجاح
     setTimeout(function() {
-      try {
-        document.body.removeChild(iframe);
-      } catch (e) {}
+      try { document.body.removeChild(iframe); } catch (e) {}
 
       var expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + selectedDays);
@@ -240,7 +230,6 @@
     resultDiv.innerHTML = message;
   }
 
-  // فحص السيرفر عند الفتح
   window.addEventListener('load', function() {
     console.log('✅ لوحة التفعيل جاهزة');
   });
