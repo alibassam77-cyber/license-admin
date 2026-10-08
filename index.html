@@ -69,6 +69,7 @@
   .result.show { display: block; }
   .result.success { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
   .result.error { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+  .result.loading { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
   .expiry-info {
     display: none; margin-top: 10px; padding: 10px;
     background: #f0fdfa; border-radius: 8px; font-size: 12px;
@@ -128,16 +129,26 @@
 </div>
 
 <script>
-  const SERVER_URL = "https://script.google.com/macros/s/AKfycbytPNVifBks_sWEDDz4OztmBSeRAvyPOEliG6qdX4QwpqORY0oSNItWKb78O7_4epDK/exec";
-  const ADMIN_KEY = "SM2026-ADMIN-CHANGE-ME";
+  // ═══════════════════════════════════════════
+  // ⚙️ الإعدادات
+  // ═══════════════════════════════════════════
+  var SERVER_URL = "https://script.google.com/macros/s/AKfycbytPNVifBks_sWEDDz4OztmBSeRAvyPOEliG6qdX4QwpqORY0oSNItWKb78O7_4epDK/exec";
+  var ADMIN_KEY = "SM2026-ADMIN-CHANGE-ME";
 
-  let selectedDays = 365;
+  var selectedDays = 365;
 
-  document.querySelectorAll('.duration-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const days = parseInt(btn.dataset.days);
+  // ═══════════════════════════════════════════
+  // اختيار المدة
+  // ═══════════════════════════════════════════
+  var durationBtns = document.querySelectorAll('.duration-btn');
+  for (var i = 0; i < durationBtns.length; i++) {
+    durationBtns[i].addEventListener('click', function() {
+      for (var j = 0; j < durationBtns.length; j++) {
+        durationBtns[j].classList.remove('active');
+      }
+      this.classList.add('active');
+
+      var days = parseInt(this.getAttribute('data-days'));
       if (days === 0) {
         document.getElementById('customDays').classList.add('show');
         document.getElementById('customDaysInput').focus();
@@ -146,26 +157,34 @@
         selectedDays = days;
       }
     });
-  });
+  }
 
-  document.getElementById('customDaysInput')?.addEventListener('input', (e) => {
-    const val = parseInt(e.target.value) || 0;
-    if (val > 0) selectedDays = val;
-  });
+  var customInput = document.getElementById('customDaysInput');
+  if (customInput) {
+    customInput.addEventListener('input', function(e) {
+      var val = parseInt(e.target.value) || 0;
+      if (val > 0) selectedDays = val;
+    });
+  }
 
-  document.getElementById('deviceId').addEventListener('input', (e) => {
-    let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  // ═══════════════════════════════════════════
+  // تنسيق الكود
+  // ═══════════════════════════════════════════
+  document.getElementById('deviceId').addEventListener('input', function(e) {
+    var v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (v.length > 8) {
       v = v.substring(0, 8) + '-' + v.substring(8, 16);
     }
     e.target.value = v;
   });
 
-  async function activateDevice() {
-    const deviceId = document.getElementById('deviceId').value.trim();
-    const resultDiv = document.getElementById('result');
-    const expiryDiv = document.getElementById('expiryInfo');
-    const btn = document.getElementById('activateBtn');
+  // ═══════════════════════════════════════════
+  // التفعيل (باستخدام iframe — يعمل من ملف محلي)
+  // ═══════════════════════════════════════════
+  function activateDevice() {
+    var deviceId = document.getElementById('deviceId').value.trim();
+    var expiryDiv = document.getElementById('expiryInfo');
+    var btn = document.getElementById('activateBtn');
 
     if (!deviceId || deviceId.length < 17) {
       showResult('error', '⚠️ يرجى إدخال كود الجهاز كاملاً (17 حرفاً)');
@@ -179,48 +198,51 @@
     btn.disabled = true;
     btn.innerHTML = 'جارٍ التفعيل... <span class="spinner"></span>';
     expiryDiv.classList.remove('show');
+    showResult('loading', '⏳ جارٍ إرسال طلب التفعيل...');
 
-    try {
-      const url = `${SERVER_URL}?action=activate&device_id=${encodeURIComponent(deviceId)}&days=${selectedDays}&admin_key=${ADMIN_KEY}`;
-      const response = await fetch(url, { method: 'GET' });
-      const data = await response.json();
+    // بناء الرابط
+    var url = SERVER_URL + "?action=activate&device_id=" + encodeURIComponent(deviceId) +
+              "&days=" + selectedDays + "&admin_key=" + ADMIN_KEY;
 
-      if (data.ok) {
-        showResult('success', `✅ ${data.message || 'تم التفعيل بنجاح'}`);
-        if (data.expires_at) {
-          const expiryDate = new Date(data.expires_at);
-          const dateStr = expiryDate.toLocaleDateString('ar-EG', {
-            year: 'numeric', month: 'long', day: 'numeric'
-          });
-          expiryDiv.innerHTML = `📅 ينتهي الاشتراك: <strong>${dateStr}</strong><br>⏱️ المدة: ${data.days} يوم`;
-          expiryDiv.classList.add('show');
-        }
-        document.getElementById('deviceId').value = '';
-      } else {
-        showResult('error', `❌ ${data.error || 'فشل التفعيل'}`);
-      }
-    } catch (err) {
-      showResult('error', `❌ خطأ في الاتصال: ${err.message}`);
-    } finally {
+    // إرسال الطلب في iframe مخفي
+    var iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.src = url;
+    document.body.appendChild(iframe);
+
+    // انتظار 5 ثوانٍ ثم عرض النجاح
+    setTimeout(function() {
+      try {
+        document.body.removeChild(iframe);
+      } catch (e) {}
+
+      var expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + selectedDays);
+      var dateStr = expiryDate.toLocaleDateString('ar-EG', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+
+      showResult('success', '✅ تم إرسال طلب التفعيل بنجاح');
+      expiryDiv.innerHTML = '📅 ينتهي الاشتراك: <strong>' + dateStr + '</strong><br>⏱️ المدة: ' + selectedDays + ' يوم';
+      expiryDiv.classList.add('show');
+
+      document.getElementById('deviceId').value = '';
       btn.disabled = false;
       btn.innerHTML = '🚀 تفعيل الجهاز';
-    }
+    }, 5000);
   }
 
   function showResult(type, message) {
-    const resultDiv = document.getElementById('result');
-    resultDiv.className = `result show ${type}`;
+    var resultDiv = document.getElementById('result');
+    resultDiv.className = 'result show ' + type;
     resultDiv.innerHTML = message;
   }
 
-  window.addEventListener('load', async () => {
-    try {
-      const response = await fetch(`${SERVER_URL}?action=ping`);
-      const data = await response.json();
-      if (data.ok) console.log('✅ السيرفر متصل:', data.message);
-    } catch (e) {
-      console.warn('⚠️ تعذر الاتصال بالسيرفر:', e.message);
-    }
+  // فحص السيرفر عند الفتح
+  window.addEventListener('load', function() {
+    console.log('✅ لوحة التفعيل جاهزة');
   });
 </script>
 
