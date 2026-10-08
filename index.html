@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تفعيل التطبيقات</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+    min-height: 100vh;
+    padding: 16px;
+    color: #1a1a1a;
+  }
+  .container { max-width: 500px; margin: 0 auto; }
+  .header { text-align: center; color: white; margin-bottom: 20px; padding: 10px; }
+  .header h1 { font-size: 22px; margin-bottom: 6px; }
+  .header p { font-size: 12px; opacity: 0.85; }
+  .card {
+    background: white; border-radius: 14px; padding: 18px;
+    margin-bottom: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+  .card h2 { font-size: 14px; color: #0f766e; margin-bottom: 12px; font-weight: bold; }
+  input[type="text"] {
+    width: 100%; padding: 12px; font-size: 15px;
+    font-family: 'Courier New', monospace;
+    border: 2px solid #d1d5db; border-radius: 10px;
+    text-align: center; letter-spacing: 1px;
+    text-transform: uppercase; background: #f9fafb; color: #111;
+  }
+  input[type="text"]:focus {
+    outline: none; border-color: #0f766e; background: white;
+  }
+  .durations {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-top: 4px;
+  }
+  .duration-btn {
+    padding: 10px 6px; border: 2px solid #e5e7eb;
+    background: #f9fafb; border-radius: 10px;
+    font-size: 12px; font-weight: bold; color: #4b5563;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .duration-btn.active {
+    border-color: #0f766e; background: #0f766e; color: white;
+  }
+  .duration-btn:active { transform: scale(0.95); }
+  .custom-days { margin-top: 10px; display: none; }
+  .custom-days.show { display: block; }
+  .custom-days input {
+    font-family: inherit; text-transform: none;
+    letter-spacing: normal; font-size: 14px;
+  }
+  .activate-btn {
+    width: 100%; padding: 15px; font-size: 16px; font-weight: bold;
+    background: linear-gradient(135deg, #0f766e, #115e59);
+    color: white; border: none; border-radius: 12px;
+    cursor: pointer; margin-top: 4px;
+    box-shadow: 0 4px 10px rgba(15,118,110,0.3); transition: all 0.2s;
+  }
+  .activate-btn:active { transform: scale(0.98); }
+  .activate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .result {
+    display: none; padding: 14px; border-radius: 10px;
+    margin-top: 12px; font-size: 13px; line-height: 1.6;
+    font-weight: bold; text-align: center; word-break: break-word;
+  }
+  .result.show { display: block; }
+  .result.success { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+  .result.error { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+  .expiry-info {
+    display: none; margin-top: 10px; padding: 10px;
+    background: #f0fdfa; border-radius: 8px; font-size: 12px;
+    color: #0f766e; text-align: center; font-weight: bold;
+    border: 1px dashed #5eead4;
+  }
+  .expiry-info.show { display: block; }
+  .footer {
+    text-align: center; color: rgba(255,255,255,0.7);
+    font-size: 11px; padding: 10px;
+  }
+  .spinner {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle; margin-left: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🔑 لوحة تفعيل التطبيقات</h1>
+    <p>نظام المدرسة الذكي</p>
+  </div>
+
+  <div class="card">
+    <h2>📱 كود الجهاز</h2>
+    <input type="text" id="deviceId" placeholder="XXXXXXXX-XXXXXXXX" autocomplete="off">
+  </div>
+
+  <div class="card">
+    <h2>⏱️ مدة الاشتراك</h2>
+    <div class="durations">
+      <button class="duration-btn" data-days="30">شهر</button>
+      <button class="duration-btn" data-days="90">3 أشهر</button>
+      <button class="duration-btn" data-days="180">6 أشهر</button>
+      <button class="duration-btn active" data-days="365">سنة</button>
+      <button class="duration-btn" data-days="730">سنتان</button>
+      <button class="duration-btn" data-days="0">مخصص</button>
+    </div>
+    <div class="custom-days" id="customDays">
+      <input type="text" id="customDaysInput" placeholder="اكتب عدد الأيام" style="margin-top:10px;">
+    </div>
+  </div>
+
+  <button class="activate-btn" id="activateBtn" onclick="activateDevice()">
+    🚀 تفعيل الجهاز
+  </button>
+
+  <div class="result" id="result"></div>
+  <div class="expiry-info" id="expiryInfo"></div>
+
+  <div class="footer">© 2026 — لوحة التفعيل</div>
+</div>
+
+<script>
+  const SERVER_URL = "https://script.google.com/macros/s/AKfycbytPNVifBks_sWEDDz4OztmBSeRAvyPOEliG6qdX4QwpqORY0oSNItWKb78O7_4epDK/exec";
+  const ADMIN_KEY = "SM2026-ADMIN-CHANGE-ME";
+
+  let selectedDays = 365;
+
+  document.querySelectorAll('.duration-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const days = parseInt(btn.dataset.days);
+      if (days === 0) {
+        document.getElementById('customDays').classList.add('show');
+        document.getElementById('customDaysInput').focus();
+      } else {
+        document.getElementById('customDays').classList.remove('show');
+        selectedDays = days;
+      }
+    });
+  });
+
+  document.getElementById('customDaysInput')?.addEventListener('input', (e) => {
+    const val = parseInt(e.target.value) || 0;
+    if (val > 0) selectedDays = val;
+  });
+
+  document.getElementById('deviceId').addEventListener('input', (e) => {
+    let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (v.length > 8) {
+      v = v.substring(0, 8) + '-' + v.substring(8, 16);
+    }
+    e.target.value = v;
+  });
+
+  async function activateDevice() {
+    const deviceId = document.getElementById('deviceId').value.trim();
+    const resultDiv = document.getElementById('result');
+    const expiryDiv = document.getElementById('expiryInfo');
+    const btn = document.getElementById('activateBtn');
+
+    if (!deviceId || deviceId.length < 17) {
+      showResult('error', '⚠️ يرجى إدخال كود الجهاز كاملاً (17 حرفاً)');
+      return;
+    }
+    if (selectedDays <= 0) {
+      showResult('error', '⚠️ يرجى اختيار مدة صحيحة');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = 'جارٍ التفعيل... <span class="spinner"></span>';
+    expiryDiv.classList.remove('show');
+
+    try {
+      const url = `${SERVER_URL}?action=activate&device_id=${encodeURIComponent(deviceId)}&days=${selectedDays}&admin_key=${ADMIN_KEY}`;
+      const response = await fetch(url, { method: 'GET' });
+      const data = await response.json();
+
+      if (data.ok) {
+        showResult('success', `✅ ${data.message || 'تم التفعيل بنجاح'}`);
+        if (data.expires_at) {
+          const expiryDate = new Date(data.expires_at);
+          const dateStr = expiryDate.toLocaleDateString('ar-EG', {
+            year: 'numeric', month: 'long', day: 'numeric'
+          });
+          expiryDiv.innerHTML = `📅 ينتهي الاشتراك: <strong>${dateStr}</strong><br>⏱️ المدة: ${data.days} يوم`;
+          expiryDiv.classList.add('show');
+        }
+        document.getElementById('deviceId').value = '';
+      } else {
+        showResult('error', `❌ ${data.error || 'فشل التفعيل'}`);
+      }
+    } catch (err) {
+      showResult('error', `❌ خطأ في الاتصال: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '🚀 تفعيل الجهاز';
+    }
+  }
+
+  function showResult(type, message) {
+    const resultDiv = document.getElementById('result');
+    resultDiv.className = `result show ${type}`;
+    resultDiv.innerHTML = message;
+  }
+
+  window.addEventListener('load', async () => {
+    try {
+      const response = await fetch(`${SERVER_URL}?action=ping`);
+      const data = await response.json();
+      if (data.ok) console.log('✅ السيرفر متصل:', data.message);
+    } catch (e) {
+      console.warn('⚠️ تعذر الاتصال بالسيرفر:', e.message);
+    }
+  });
+</script>
+
+</body>
+</html>
